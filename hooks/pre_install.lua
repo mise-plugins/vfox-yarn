@@ -1,14 +1,25 @@
 --- Pre-installation hook
 PLUGIN = {}
 
-local http = require("vfox.http")
+local function download_file(url, output_path)
+    -- Try wget first, then curl
+    local wget_cmd = "wget -q -O " .. output_path .. " " .. url .. " 2>/dev/null"
+    local curl_cmd = "curl -sSL -o " .. output_path .. " " .. url .. " 2>/dev/null"
+    
+    if os.execute(wget_cmd) == 0 then
+        return true
+    elseif os.execute(curl_cmd) == 0 then
+        return true
+    end
+    return false
+end
 
 function PLUGIN:PreInstall(ctx)
     local version = ctx.version
     local major_version = string.sub(version, 1, 1)
     
     if major_version == "1" then
-        -- Yarn Classic (v1.x) - return tarball URL for vfox to handle
+        -- Yarn Classic (v1.x) - return tarball URL for mise to handle
         local archive_url = "https://classic.yarnpkg.com/downloads/" .. version .. "/yarn-v" .. version .. ".tar.gz"
         
         -- Note about GPG verification
@@ -20,11 +31,11 @@ function PLUGIN:PreInstall(ctx)
             if not has_gpg then
                 print("⚠️  Note: GPG verification skipped (gpg not found). Set MISE_YARN_SKIP_GPG=1 to suppress this message")
             end
-            -- Note: We can't do GPG verification when vfox handles the download
+            -- Note: We can't do GPG verification when mise handles the download
             -- This is a tradeoff for simpler code
         end
         
-        -- Return URL for vfox to download and extract
+        -- Return URL for mise to download and extract
         return {
             version = version,
             url = archive_url
@@ -39,13 +50,8 @@ function PLUGIN:PreInstall(ctx)
         
         -- Download yarn.js directly to installation location
         local yarn_file = install_path .. "/bin/yarn"
-        local err = http.download_file({
-            url = yarn_url,
-            file_path = yarn_file
-        })
-        
-        if err ~= nil then
-            error("Failed to download Yarn v2+: " .. err)
+        if not download_file(yarn_url, yarn_file) then
+            error("Failed to download Yarn v2+")
         end
         
         -- Make executable

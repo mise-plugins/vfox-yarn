@@ -1,56 +1,52 @@
 --- List all available versions
 PLUGIN = {}
 
-local http = require("vfox.http")
-local json = require("vfox.json")
+local function execCommand(cmd)
+    local handle = io.popen(cmd .. " 2>/dev/null")
+    if handle then
+        local result = handle:read("*a")
+        handle:close()
+        return result
+    end
+    return ""
+end
 
 function PLUGIN:Available(ctx)
     local versions = {}
     
-    -- Get Yarn Berry versions (v2.x+) from GitHub API
-    local berry_resp, err = http.get({
-        url = "https://api.github.com/repos/yarnpkg/berry/git/refs/tags"
-    })
+    -- Get Yarn Berry versions (v2.x+) FIRST in DESCENDING order
+    -- When mise reverses the list, these will appear LAST in ASCENDING order
+    local berry_output = execCommand([[
+        git ls-remote --refs --tags "https://github.com/yarnpkg/berry.git" |
+        grep '@yarnpkg/cli' |
+        sed -E 's|^.+refs/tags/@yarnpkg/cli/||g' |
+        sort -rV
+    ]])
     
-    if err == nil and berry_resp.status_code == 200 then
-        local refs = json.decode(berry_resp.body)
-        if refs then
-            -- Process refs in reverse order to get newest first
-            for i = #refs, 1, -1 do
-                local ref = refs[i].ref
-                if ref and ref:match("@yarnpkg/cli/") then
-                    local version = ref:gsub("^refs/tags/@yarnpkg/cli/", "")
-                    if version and version ~= "" then
-                        table.insert(versions, {
-                            version = version
-                        })
-                    end
-                end
-            end
+    for version in berry_output:gmatch("[^\n]+") do
+        if version and version ~= "" then
+            table.insert(versions, {
+                version = version
+            })
         end
     end
     
-    -- Get Yarn Classic versions (v1.x) from GitHub API
-    local classic_resp, err = http.get({
-        url = "https://api.github.com/repos/yarnpkg/yarn/git/refs/tags"
-    })
+    -- Get Yarn Classic versions (v1.x) SECOND in DESCENDING order
+    -- When mise reverses the list, these will appear FIRST in ASCENDING order
+    local classic_output = execCommand([[
+        git ls-remote --refs --tags "https://github.com/yarnpkg/yarn.git" |
+        sed -E 's|^.+refs/tags/||g' |
+        grep -E '^v' |
+        sed -E 's|^v||g' |
+        grep -Ev '^0\.' |
+        sort -rV
+    ]])
     
-    if err == nil and classic_resp.status_code == 200 then
-        local refs = json.decode(classic_resp.body)
-        if refs then
-            -- Process refs in reverse order to get newest first
-            for i = #refs, 1, -1 do
-                local ref = refs[i].ref
-                if ref and ref:match("^refs/tags/v") then
-                    local version = ref:gsub("^refs/tags/v", "")
-                    -- Skip v0.x versions
-                    if version and not version:match("^0%.") then
-                        table.insert(versions, {
-                            version = version
-                        })
-                    end
-                end
-            end
+    for version in classic_output:gmatch("[^\n]+") do
+        if version and version ~= "" then
+            table.insert(versions, {
+                version = version
+            })
         end
     end
     

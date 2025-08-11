@@ -14,6 +14,7 @@ Yarn plugin for [mise](https://mise.jdx.dev/) (using the vfox plugin format).
 
 ## Requirements
 
+- `wget` or `curl` - for downloading files
 - `gpg` - for v1 signature verification (optional, can be skipped with `MISE_YARN_SKIP_GPG=1`)
 
 ## Installation

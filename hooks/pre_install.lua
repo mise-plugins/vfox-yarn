@@ -33,9 +33,6 @@ function PLUGIN:PreInstall(ctx)
         -- Yarn Berry (v2.x+) - single JS file, we need to handle it manually
         local yarn_url = "https://repo.yarnpkg.com/" .. version .. "/packages/yarnpkg-cli/bin/yarn.js"
         local install_path = os.getenv("MISE_INSTALL_PATH")
-        if not install_path then
-            install_path = os.getenv("HOME") .. "/.local/share/mise/installs/yarn/" .. version
-        end
         
         -- Create installation directory
         os.execute("mkdir -p " .. install_path .. "/bin")

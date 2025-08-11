@@ -65,7 +65,8 @@ This plugin uses the vfox plugin format and is implemented in Lua with the follo
   - `pre_install.lua` - Handles installation
   - `post_install.lua` - Post-installation tasks
   - `env_keys.lua` - Environment variable configuration
-  - Other hooks for legacy file support and uninstallation
+  - `parse_legacy_file.lua` - Support for `.yvmrc` files
+  - `legacy_filenames.lua` - Defines legacy config files
 
 To test the plugin locally:
 ```bash

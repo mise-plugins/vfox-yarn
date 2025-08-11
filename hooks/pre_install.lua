@@ -9,9 +9,12 @@ function PLUGIN:PreInstall(ctx)
         -- Yarn Classic (v1.x) - return tarball URL for mise to handle
         local archive_url = "https://classic.yarnpkg.com/downloads/" .. version .. "/yarn-v" .. version .. ".tar.gz"
         
-        -- Note about GPG verification
-        if os.getenv("MISE_YARN_SKIP_GPG") == nil then
-            local gpg_check = io.popen("command -v gpg 2>/dev/null")
+        -- Note about GPG verification (skip on Windows)
+        local is_windows = package.config:sub(1,1) == '\\'
+        if os.getenv("MISE_YARN_SKIP_GPG") == nil and not is_windows then
+            local stderr_redirect = " 2>/dev/null"
+            
+            local gpg_check = io.popen("command -v gpg" .. stderr_redirect)
             local has_gpg = gpg_check and gpg_check:read("*a"):match("%S")
             if gpg_check then gpg_check:close() end
             

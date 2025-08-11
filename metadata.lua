@@ -3,10 +3,10 @@
 
 PLUGIN = {
     name = "yarn",
-    author = "vfox-yarn contributors",
+    author = "mise-plugins",
     version = "0.1.0",
-    description = "Yarn package manager plugin for vfox",
-    homepage = "https://github.com/version-fox/vfox-yarn",
+    description = "Yarn package manager plugin for mise",
+    homepage = "https://github.com/mise-plugins/mise-yarn",
     license = "MIT",
     notes = [[
 This plugin installs Yarn package manager.

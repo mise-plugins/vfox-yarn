@@ -46,6 +46,19 @@ jobs:
           New-Item -ItemType Directory -Force -Path $pluginDir
           New-Item -ItemType Junction -Path "$pluginDir\yarn" -Target $PWD
       
+      # Validate version listing
+      - name: Validate mise ls-remote works
+        shell: bash
+        run: |
+          echo "Listing available yarn versions..."
+          mise ls-remote yarn | head -20
+          echo ""
+          echo "Checking for v1 versions..."
+          mise ls-remote yarn | grep -E '^1\.' | head -5 || (echo "ERROR: No v1 versions found!" && exit 1)
+          echo ""
+          echo "Checking for v2+ versions..."
+          mise ls-remote yarn | grep -E '^[234]\.' | head -5 || (echo "ERROR: No v2+ versions found!" && exit 1)
+      
       # Test Yarn v1 (Classic)
       - name: Test Yarn v1 installation
         shell: bash

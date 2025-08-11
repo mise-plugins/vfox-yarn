@@ -1,19 +1,6 @@
 --- Pre-installation hook
 PLUGIN = {}
 
-local function download_file(url, output_path)
-    -- Try wget first, then curl
-    local wget_cmd = "wget -q -O " .. output_path .. " " .. url .. " 2>/dev/null"
-    local curl_cmd = "curl -sSL -o " .. output_path .. " " .. url .. " 2>/dev/null"
-    
-    if os.execute(wget_cmd) == 0 then
-        return true
-    elseif os.execute(curl_cmd) == 0 then
-        return true
-    end
-    return false
-end
-
 function PLUGIN:PreInstall(ctx)
     local version = ctx.version
     local major_version = string.sub(version, 1, 1)
@@ -41,25 +28,7 @@ function PLUGIN:PreInstall(ctx)
             url = archive_url
         }
     else
-        -- Yarn Berry (v2.x+) - single JS file, we need to handle it manually
-        local yarn_url = "https://repo.yarnpkg.com/" .. version .. "/packages/yarnpkg-cli/bin/yarn.js"
-        local install_path = os.getenv("MISE_INSTALL_PATH")
-        
-        -- Create installation directory
-        os.execute("mkdir -p " .. install_path .. "/bin")
-        
-        -- Download yarn.js directly to installation location
-        local yarn_file = install_path .. "/bin/yarn"
-        if not download_file(yarn_url, yarn_file) then
-            error("Failed to download Yarn v2+")
-        end
-        
-        -- Make executable
-        os.execute("chmod +x " .. yarn_file)
-        
-        print("✅ Yarn " .. version .. " installed")
-        
-        -- Return version info
+        -- Yarn Berry (v2.x+) - single JS file, handled in post-install
         return {
             version = version
         }

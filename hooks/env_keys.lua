@@ -1,13 +1,15 @@
---- Environment variables to set
+--- Environment keys hook
 PLUGIN = {}
 
 function PLUGIN:EnvKeys(ctx)
-    local install_path = ctx.path
+    -- Get the SDK installation path
+    local version_path = ctx.path
     
+    -- Return the PATH configuration for yarn binaries
     return {
         {
             key = "PATH",
-            value = install_path .. "/bin"
+            value = version_path .. "/bin"
         }
     }
 end

@@ -1,5 +1,4 @@
 --- Parse legacy version files
-PLUGIN = {}
 
 function PLUGIN:ParseLegacyFile(ctx)
     local filepath = ctx.filepath

@@ -1,5 +1,4 @@
 --- Pre-installation hook
-PLUGIN = {}
 
 function PLUGIN:PreInstall(ctx)
     local version = ctx.version

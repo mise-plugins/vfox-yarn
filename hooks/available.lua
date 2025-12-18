@@ -1,5 +1,4 @@
 --- List all available versions
-PLUGIN = {}
 
 local function fetch_github_tags(repo_url)
     -- Use git ls-remote to get tags

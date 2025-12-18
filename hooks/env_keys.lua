@@ -1,5 +1,4 @@
 --- Environment keys hook
-PLUGIN = {}
 
 function PLUGIN:EnvKeys(ctx)
     -- Get the SDK installation path

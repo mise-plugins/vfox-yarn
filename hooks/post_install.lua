@@ -1,5 +1,4 @@
 --- Post-installation hook
-PLUGIN = {}
 
 local function download_file(url, output_path)
     -- Detect Windows

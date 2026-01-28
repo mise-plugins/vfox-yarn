@@ -65,6 +65,27 @@ end
 
 function PLUGIN:Available(ctx)
     local versions = {}
+
+    -- Get Yarn ZPM versions (v6.x+)
+    local zpm_tags = fetch_github_tags("https://github.com/yarnpkg/zpm.git")
+    local zpm_versions = {}
+    for _, tag in ipairs(zpm_tags) do
+        -- ZPM versions are prefixed with 'v'
+        local version = tag:match("^v(.+)$")
+        if version then
+            table.insert(zpm_versions, version)
+        end
+    end
+
+    -- Sort ZPM versions in descending order
+    table.sort(zpm_versions, version_compare)
+
+    -- Add ZPM versions to the list
+    for _, version in ipairs(zpm_versions) do
+        table.insert(versions, {
+            version = version
+        })
+    end
     
     -- Get Yarn Berry versions (v2.x+)
     local berry_tags = fetch_github_tags("https://github.com/yarnpkg/berry.git")

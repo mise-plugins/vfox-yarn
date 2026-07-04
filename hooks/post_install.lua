@@ -1,26 +1,7 @@
 --- Post-installation hook
 
--- os.execute returns 0 in Lua 5.1, true in Lua 5.2+
-local function exec_success(result)
-    return result == true or result == 0
-end
-
-local function download_file(url, output_path)
-    -- Detect Windows
-    local is_windows = package.config:sub(1, 1) == "\\"
-    local stderr_redirect = is_windows and " 2>NUL" or " 2>/dev/null"
-
-    -- Try curl first (more likely to be available on Windows via Git Bash)
-    local curl_cmd = "curl -sSL -o " .. output_path .. " " .. url .. stderr_redirect
-    local wget_cmd = "wget -q -O " .. output_path .. " " .. url .. stderr_redirect
-
-    if exec_success(os.execute(curl_cmd)) then
-        return true
-    elseif exec_success(os.execute(wget_cmd)) then
-        return true
-    end
-    return false
-end
+local file = require("file")
+local http = require("http")
 
 function PLUGIN:PostInstall(ctx)
     -- Get install path - it should be in sdkInfo
@@ -55,24 +36,35 @@ function PLUGIN:PostInstall(ctx)
         -- Detect Windows
         local is_windows = package.config:sub(1, 1) == "\\"
 
-        -- Create bin directory (cross-platform)
-        local bin_dir = install_path .. "/bin"
+        -- Create bin directory. mkdir is a shell built-in on both cmd and sh,
+        -- so it does not depend on any external binary being on PATH. Use
+        -- file.join_path so the path uses the platform separator (mixing "/"
+        -- into a Windows path can confuse cmd's mkdir).
+        local bin_dir = file.join_path(install_path, "bin")
         if is_windows then
             os.execute('mkdir "' .. bin_dir .. '" 2>NUL')
         else
-            os.execute("mkdir -p " .. bin_dir)
+            os.execute('mkdir -p "' .. bin_dir .. '"')
         end
 
-        -- Download yarn.js
-        local yarn_js_file = bin_dir .. "/yarn.js"
-        if not download_file(yarn_url, yarn_js_file) then
-            error("Failed to download Yarn v2+")
+        -- Download yarn.js via mise's built-in HTTP client rather than shelling
+        -- out to curl/wget. The shell approach is unreliable on Windows: under
+        -- mise's sanitized os.execute environment curl/wget are not guaranteed
+        -- to be on PATH, and with stderr redirected the real error is lost.
+        -- http.download_file uses mise's own client (with retry) and raises a
+        -- descriptive error on failure.
+        local yarn_js_file = file.join_path(bin_dir, "yarn.js")
+        local ok, err = pcall(function()
+            http.download_file({ url = yarn_url, headers = {} }, yarn_js_file)
+        end)
+        if not ok then
+            error("Failed to download Yarn v2+ from " .. yarn_url .. ": " .. tostring(err))
         end
 
         -- Create wrapper script
         if is_windows then
             -- Create yarn.cmd wrapper for Windows
-            local yarn_cmd = bin_dir .. "/yarn.cmd"
+            local yarn_cmd = file.join_path(bin_dir, "yarn.cmd")
             local cmd_file = io.open(yarn_cmd, "w")
             if cmd_file then
                 cmd_file:write("@echo off\n")
@@ -81,7 +73,7 @@ function PLUGIN:PostInstall(ctx)
             end
 
             -- Also create yarn without extension for Git Bash
-            local yarn_sh = bin_dir .. "/yarn"
+            local yarn_sh = file.join_path(bin_dir, "yarn")
             local sh_file = io.open(yarn_sh, "w")
             if sh_file then
                 sh_file:write("#!/bin/sh\n")
@@ -90,7 +82,7 @@ function PLUGIN:PostInstall(ctx)
             end
         else
             -- Create shell wrapper for Unix
-            local yarn_file = bin_dir .. "/yarn"
+            local yarn_file = file.join_path(bin_dir, "yarn")
             local wrapper_file = io.open(yarn_file, "w")
             if wrapper_file then
                 wrapper_file:write("#!/bin/sh\n")
@@ -98,7 +90,7 @@ function PLUGIN:PostInstall(ctx)
                 wrapper_file:close()
             end
             -- Make executable
-            os.execute("chmod +x " .. yarn_file)
+            os.execute('chmod +x "' .. yarn_file .. '"')
         end
     end
 

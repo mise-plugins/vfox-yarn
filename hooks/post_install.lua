@@ -39,25 +39,27 @@ function PLUGIN:PostInstall(ctx)
         -- Create bin directory. mkdir is a shell built-in on both cmd and sh,
         -- so it does not depend on any external binary being on PATH. Use
         -- file.join_path so the path uses the platform separator (mixing "/"
-        -- into a Windows path can confuse cmd's mkdir).
+        -- into a Windows path can confuse cmd's mkdir). Skip if it already
+        -- exists so a re-install does not print a spurious mkdir error.
         local bin_dir = file.join_path(install_path, "bin")
-        if is_windows then
-            os.execute('mkdir "' .. bin_dir .. '" 2>NUL')
-        else
-            os.execute('mkdir -p "' .. bin_dir .. '"')
+        if not file.exists(bin_dir) then
+            if is_windows then
+                os.execute('mkdir "' .. bin_dir .. '" 2>NUL')
+            else
+                os.execute('mkdir -p "' .. bin_dir .. '"')
+            end
         end
 
         -- Download yarn.js via mise's built-in HTTP client rather than shelling
         -- out to curl/wget. The shell approach is unreliable on Windows: under
         -- mise's sanitized os.execute environment curl/wget are not guaranteed
         -- to be on PATH, and with stderr redirected the real error is lost.
-        -- http.download_file uses mise's own client (with retry) and raises a
-        -- descriptive error on failure.
+        -- http.download_file uses mise's own client (with retry). Handle both
+        -- possible failure conventions robustly: a raised Lua error (ok=false)
+        -- and a returned error value (ok=true, err~=nil).
         local yarn_js_file = file.join_path(bin_dir, "yarn.js")
-        local ok, err = pcall(function()
-            http.download_file({ url = yarn_url, headers = {} }, yarn_js_file)
-        end)
-        if not ok then
+        local ok, err = pcall(http.download_file, { url = yarn_url, headers = {} }, yarn_js_file)
+        if not ok or err then
             error("Failed to download Yarn v2+ from " .. yarn_url .. ": " .. tostring(err))
         end
 
